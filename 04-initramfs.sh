@@ -22,7 +22,7 @@ echo INITRAMFS=$INITRAMFS
 # https://wiki.gentoo.org/wiki/Custom_Initramfs
 
 grub_install() {
-	mount /boot
+	mount /boot || echo already mounted?
 	grub-install --compress=xz --no-nvram --target=x86_64-efi --efi-directory=/boot --removable
 }
 
@@ -59,7 +59,10 @@ create() {
 
 	cp -av "/lib/modules/${KERNEL_VER}" $INITRAMFS/lib/modules/
 	mkdir -p $INITRAMFS/lib/firmware
-	cp -av /lib/firmware/amd* $INITRAMFS/lib/firmware/
+
+	# 2024-02-04: comment out: make amdgpu module
+	#cp -av /lib/firmware/amd* $INITRAMFS/lib/firmware/
+
 	#cp -av /lib/firmware $INITRAMFS/lib/
 
 	cp -av /usr/src/initramfs-skel/init $INITRAMFS/init
@@ -97,7 +100,8 @@ kernel() {
 	rm "/usr/src/linux/usr/initramfs_data.cpio"
 	make -j32
 	#cp -a "/boot/vmlinuz-$KERNEL_VER" "/boot/vmlinuz-$KERNEL_VER.old.$(date +%Y-%m-%d-%H-%M)" || echo "no old ver?"
-	make install
+	# 2024-02-0x add disabling systemd install, as it leads to some weird kernel paths
+	SYSTEMD_KERNEL_INSTALL=0 make install
 	grub_update
 	echo "DONE!"
 }
