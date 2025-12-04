@@ -24,4 +24,16 @@ all() {
 	time clean
 }
 
-time "$@" || date && date
+if [ $# -eq 0 ]
+then
+	time all
+	date
+	exit 0
+fi
+
+for arg in "$@"
+do
+	time "$arg"
+done
+
+date
