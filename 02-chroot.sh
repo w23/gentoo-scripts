@@ -1,7 +1,7 @@
 #!/bin/bash
-set -eux
 
 prepare() {
+	set -eux
 	cp -L /etc/resolv.conf /mnt/gentoo/etc/
 	mount -t proc /proc /mnt/gentoo/proc
 	mount --rbind /sys /mnt/gentoo/sys
@@ -16,7 +16,12 @@ prepare() {
 	chmod 1777 /dev/shm
 }
 
+copy_scripts() {
+	cp -av . /mnt/gentoo/root/gentoo-scripts
+}
+
 enter() {
+	set -eux
 	cp "$0" /mnt/gentoo/root/02-chroot.sh
 	chroot /mnt/gentoo /bin/bash -i /root/02-chroot.sh enter_finalize
 }

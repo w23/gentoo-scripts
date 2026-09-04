@@ -4,21 +4,62 @@ set -eux
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")
 source "$SCRIPT_ROOT/config"
 
-DISK_ID=$DISK_DEVICE_ID$PART
 DISK_DEVICE=/dev/disk/by-id/$DISK_DEVICE_ID
-DISK=$DISK_DEVICE$PART
-DISK_BOOT=$DISK_DEVICE$BOOT_PART
+
+# see destructful_partition
+PART_EFI=-part1
+PART_ROOT=-part2
+PART_SWAP=-part3
+
+DISK_PART_BOOT=$DISK_DEVICE$PART_EFI
+DISK_PART_ROOT=$DISK_DEVICE$PART_ROOT
+DISK_PART_SWAP=$DISK_DEVICE$PART_SWAP
+
+CRYPT_ROOTFS=crypt-$POOL
+DISK_CRYPT_ROOTFS=/dev/mapper/$CRYPT_ROOTFS
 
 mkdir -p /mnt/gentoo
 
 destructful_partition() {
 	sgdisk --zap-all $DISK_DEVICE
-	sgdisk -n1:1M:+$EFI_PART_SIZE -t1:EF00 $DISK_DEVICE
-	sgdisk -n2:0:0 -t2:BF01 $DISK_DEVICE
+
+	local PART_TYPE=8200
+	# ZFS: PART_TYPE=BF01
+
+	sgdisk \
+		-n1:1M:+$PART_EFI_SIZE -t1:EF00 $DISK_DEVICE \
+		-n2:0:-$PART_SWAP_SIZE -t2:8300 $DISK_DEVICE \
+		-n3:0:0                -t2:$PART_TYPE $DISK_DEVICE
 }
 
 boot_create() {
-	mkfs.fat -F 32 $DISK_BOOT
+	mkfs.vfat -F 32 -n EFI $DISK_PART_BOOT
+}
+
+btrfs_create() {
+	mkfs.btrfs -L ROOT $DISK_CRYPT_ROOTFS
+
+	mkdir -p /mnt/gentoo
+	mount $DISK_CRYPT_ROOTFS /mnt/gentoo
+	for sv in rootfs home root var/log var/cache var/tmp
+	do
+		NAME=$(echo "$sv"|sed -e 's/\//-/g')
+		btrfs sub create /mnt/gentoo/@$NAME
+	done
+	umount /mnt/gentoo
+}
+
+btrfs_mount() {
+	mkdir -p /mnt/gentoo
+
+	mount -o defaults,noatime,compress=zstd,autodefrag,subvol=@rootfs $DISK_CRYPT_ROOTFS /mnt/gentoo
+	for sv in home root var/log var/cache var/tmp
+	do
+		NAME=$(echo "$sv"|sed -e 's/\//-/g')
+		rmdir /mnt/gentoo/$NAME || echo what
+		mkdir -p /mnt/gentoo/$sv
+		mount -o defaults,noatime,compress=zstd,autodefrag,subvol=@$NAME $DISK_CRYPT_ROOTFS /mnt/gentoo/$sv
+	done
 }
 
 luks_create() {
@@ -36,6 +77,7 @@ luks_create() {
 		$ARG_DISK # $ARG_KEYFILE
 }
 
+#DISK_ID=$DISK_DEVICE_ID$PART
 # luks_create_key() {
 # 	DISK_ID=$1
 # 	KEY_FILE=$DISK_ID.key
@@ -124,20 +166,33 @@ stage_get() {
 }
 
 luks_setup() {
-	luks_create $DISK
-	luks_open $DISK crypt-$POOL
+	luks_create $DISK_PART_ROOT
+	luks_open $DISK_PART_ROOT $CRYPT_ROOTFS
 }
 
-fs_create() {
+fs_zfs_create() {
 	zpool_create
 	zpool status
 	zfs_create
 	zfs list
 }
 
-fs_import() {
+zfs_import() {
 	zpool import -f -N -R /mnt/gentoo $POOL
 	zfs mount $POOL/ROOT/rootfs
 	zfs mount -a
 }
-"$@"
+
+btrfs_init() {
+	#destructful_partition
+	#boot_create
+	#luks_setup
+	#btrfs_create
+	#btrfs_mount
+	#stage_get
+}
+
+for i in "$@"
+do
+	time "$i"
+done
