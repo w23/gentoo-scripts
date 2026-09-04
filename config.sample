@@ -3,8 +3,7 @@ DISK_DEVICE_ID=nvme-eui.31337
 PART_EFI_SIZE=1024M
 PART_SWAP_SIZE=64G
 
-# zfs
-#POOL=btroot
+POOL=btroot
 
 PROFILE=desktop-systemd
 # Alt: PROFILE=hardened-selinux-systemd

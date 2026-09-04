@@ -23,13 +23,23 @@ mkdir -p /mnt/gentoo
 destructful_partition() {
 	sgdisk --zap-all $DISK_DEVICE
 
-	local PART_TYPE=8200
-	# ZFS: PART_TYPE=BF01
+
+	local TYPE_EFI=ef00
+	# LUKS
+	local TYPE_FS=8309
+	# Linux filesystem
+	#local TYPE_FS=8300
+	local TYPE_SWAP=8200
 
 	sgdisk \
-		-n1:1M:+$PART_EFI_SIZE -t1:EF00 $DISK_DEVICE \
-		-n2:0:-$PART_SWAP_SIZE -t2:8300 $DISK_DEVICE \
-		-n3:0:0                -t2:$PART_TYPE $DISK_DEVICE
+		-n1:1M:+$PART_EFI_SIZE -t1:$TYPE_EFI $DISK_DEVICE \
+		-n2:0:-$PART_SWAP_SIZE -t2:$TYPE_FS $DISK_DEVICE \
+		-n3:0:0                -t3:$TYPE_SWAP $DISK_DEVICE \
+		-e
+
+	# Wait until partitions appear
+	partprobe "${DISK_DEVICE}"
+	udevadm settle
 }
 
 boot_create() {
