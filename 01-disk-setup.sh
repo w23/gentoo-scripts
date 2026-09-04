@@ -80,7 +80,9 @@ luks_create() {
 		--cipher aes-xts-plain64 \
 		--key-size 512 \
 		--hash sha512 \
+		--pbkdf argon2id \
 		--iter-time 5000 \
+		--sector-size 4096 \
 		--use-random \
 		--verify-passphrase \
 		luksFormat \
@@ -103,7 +105,11 @@ luks_open() {
 	#KEY_FILE=$DISK_ID.key
 	#DISK_DEVICE=/dev/disk/by-id/$DISK_ID
 	# --key-file $KEY_FILE
-	cryptsetup luksOpen $DISK_DEVICE $DISK_NAME
+	cryptsetup luksOpen \
+		--allow-discards \
+		--perf-no_read_workqueue \
+		--perf-no_write_workqueue \
+		$DISK_DEVICE $DISK_NAME
 }
 
 # create zfs pool
@@ -215,6 +221,14 @@ _ask() {
 }
 
 btrfs_prepare_disk() {
+	if [[ $DISK_DEVICE_ID = nvme* ]]
+	then
+		echo 'Do not forget to reformat NVMe to native block size:'
+		nvme id-ns -H ${DISK_DEVICE} | grep 'LBA Format'
+		echo 'And then e.g.:'
+		echo '`nvme format '${DISK_DEVICE}' --lbaf=1`'
+	fi
+
 	_ask
 	destructful_partition
 	boot_create
