@@ -1,8 +1,12 @@
-DISK_DEVICE_ID=nvme-eui.0025385a01ad0bef
-BOOT_PART=-part1
-PART=-part2
-EFI_PART_SIZE=1024M
+DISK_DEVICE_ID=nvme-eui.31337
 
-POOL=zroot
+PART_EFI_SIZE=1024M
+PART_SWAP_SIZE=64G
 
-TAGE_DATE=20210611T113421Z
+# zfs
+#POOL=btroot
+
+PROFILE=desktop-systemd
+# Alt: PROFILE=hardened-selinux-systemd
+
+DISTFILES_MIRROR=https://distfiles.gentoo.org/

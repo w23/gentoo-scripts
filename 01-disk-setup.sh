@@ -159,9 +159,20 @@ zfs_create() {
 	zfs snapshot -r $POOL@empty
 }
 
+STAGE_BASEURL="${DISTFILES_MIRROR}/releases/amd64/autobuilds/current-stage3-amd64-${PROFILE}"
+
+_get_latest_stage_url() {
+	local METADATA_URL="${STAGE_BASEURL}/latest-stage3-amd64-${PROFILE}.txt"
+	local LATEST_STAGE="$(curl "${METADATA_URL}" | awk '/^stage3-/ { print $1 }')"
+	STAGE_URL="${STAGE_BASEURL}/${LATEST_STAGE}"
+	echo "Lastest stage3 is ${STAGE_URL}"
+}
+
 stage_get() {
+	_get_latest_stage_url
+
 	cd /mnt/gentoo
-	wget -c http://distfiles.gentoo.org/releases/amd64/autobuilds/$TAGE_DATE/stage3-amd64-$TAGE_DATE.tar.xz
+	wget -ct0 -T10 "${STAGE_URL}"
 	tar xvJpf stage3-*.tar.xz --xattrs --numeric-owner
 }
 
@@ -183,13 +194,27 @@ zfs_import() {
 	zfs mount -a
 }
 
-btrfs_init() {
-	#destructful_partition
-	#boot_create
-	#luks_setup
-	#btrfs_create
-	#btrfs_mount
-	#stage_get
+_ask() {
+	# https://stackoverflow.com/a/1885534
+	read -p "Are you sure? " -n 1 -r
+	echo    # (optional) move to a new line
+	if [[ ! $REPLY =~ ^[Yy]$ ]]
+	then
+			[[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
+	fi
+}
+
+btrfs_prepare_disk() {
+	_ask
+	destructful_partition
+	boot_create
+	luks_setup
+	btrfs_create
+}
+
+btrfs_populate() {
+	btrfs_mount
+	stage_get
 }
 
 for i in "$@"
