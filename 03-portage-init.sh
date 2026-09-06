@@ -8,9 +8,29 @@ download() {
 }
 
 prepare() {
-	echo "ACCEPT_LICENSE=\"*\"
+	echo 'ACCEPT_LICENSE="*"
+# Compiler flags to set for all languages
+COMMON_FLAGS="-march=native -O2 -pipe"
+# Use the same settings for both variables
+CFLAGS="${COMMON_FLAGS}"
+CXXFLAGS="${COMMON_FLAGS}"
+RUSTFLAGS="${RUSTFLAGS} -C target-cpu=native"
 PORTAGE_NICENESS=19
-USE=\"-bindist -doc -fonts -themes -sendmail mmx sse sse2\"" >> /etc/portage/make.conf
+MAKEOPTS="-j24 -l22"
+GRUB_PLATFORMS="efi-64"
+USE="-bindist -doc -sendmail mmx sse sse2"' \
+	>> /etc/portage/make.conf
+
+	echo '*/* VIDEO_CARDS: amdgpu radeonsi' > /etc/portage/package.use/00video_cards
+
+	ln -sf ../usr/share/zoneinfo/America/New_York /etc/localtime
+
+	echo "en_GB.UTF-8 UTF-8
+ru_RU.UTF-8 UTF-8
+C.UTF8 UTF-8" > /etc/locale.gen
+	locale-gen
+
+#USE=\"-bindist -doc -fonts -themes -sendmail mmx sse sse2\"" >> /etc/portage/make.conf
 #MAKEOPTS=\"-j32 -l4\"
 }
 
@@ -18,7 +38,9 @@ march() {
 	emerge -tv app-portage/cpuid2cpuflags
 
 	echo "*/* $(cpuid2cpuflags)" > /etc/portage/package.use/00cpu-flags
-	gcc -v -E -x c -march=native -mtune=native - < /dev/null 2>&1 | grep cc1 | perl -pe 's/^.* - //g;' >> /etc/portage/make.conf
+
+	# This is for cross-compilation only:
+	#gcc -v -E -x c -march=native -mtune=native - < /dev/null 2>&1 | grep cc1 | perl -pe 's/^.* - //g;' >> /etc/portage/make.conf
 	# BEWARE, THIS BREAKS STUFF: -mtune=generic -fno-strict-overflow -fPIE -fstack-protector-all -fstack-check=specific"
 
 	# FIXME
@@ -27,11 +49,11 @@ march() {
 
 ccache() {
 	emerge -tv ccache
+	mkdir -p /var/cache/ccache
 	chown root:portage /var/cache/ccache
 	chmod 2775 /var/cache/ccache
-	echo "FEATURES=\"\${FEATURES} ccache cgroup splitdebug\"
-GRUB_PLATFORMS=\"efi-64\"
-CCACHE_SIZE=\"32G\"
+	echo "FEATURES=\"\${FEATURES} ccache splitdebug\"
+CCACHE_SIZE=\"64G\"
 CCACHE_DIR=/var/cache/ccache" >> /etc/portage/make.conf
 }
 
@@ -49,14 +71,14 @@ update_world() {
 essentials() {
 	emerge -tav \
 		vim tmux app-misc/mc gentoolkit wpa_supplicant pciutils usbutils mlocate dhcpcd eix logrotate sudo htop lsof \
-		openssh
+		openssh tmux neovim
 	eix-update
-	eselect kernel set 1
 }
 
-install_genkernel() {
-	emerge -tav grub genkernel gentoo-sources linux-firmware
-	genkernel --makeopts=-j32 kernel
+
+setup_kernel() {
+	emerge -tav grub gentoo-sources linux-firmware
+	eselect kernel set 1
 }
 
 install_zfs() {
@@ -73,4 +95,4 @@ init() {
 	essentials
 }
 
-"$@"
+time "$@"
