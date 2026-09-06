@@ -100,8 +100,8 @@ luks_create() {
 # }
 
 luks_open() {
-	DISK_DEVICE=$1
-	DISK_NAME=$2
+	DISK_DEVICE=$DISK_PART_ROOT
+	DISK_NAME=$CRYPT_ROOTFS
 	#KEY_FILE=$DISK_ID.key
 	#DISK_DEVICE=/dev/disk/by-id/$DISK_ID
 	# --key-file $KEY_FILE
@@ -194,7 +194,7 @@ stage_get() {
 
 luks_setup() {
 	luks_create $DISK_PART_ROOT
-	luks_open $DISK_PART_ROOT $CRYPT_ROOTFS
+	luks_open
 }
 
 fs_zfs_create() {
