@@ -1,15 +1,7 @@
 #!/bin/sh
-
 set -eux
 
 KERNEL_VER=$(readlink /usr/src/linux | sed -e 's/^linux-//')
-
-# gcc (Gentoo 11.3.0 p4) 11.3.0
-#GCC_VER=$(gcc --version|grep '^gcc'|sed -e 's/.*) //')
-# gcc (Gentoo 11.2.1_p20220115 p4) 11.2.1 20220115
-#GCC_VER=$(gcc --version|grep '^gcc'|sed -e 's/.*(.*) \(.*\) .*/\1/')
-#GCC_VER=$(gcc --version|grep '^gcc'|sed -e 's/.*(.*) \([[:graph:]]*\).*/\1/')
-# just the major version
 GCC_VER=$(gcc --version|grep '^gcc'|sed -e 's/.*(.*) \([[:digit:]]*\).*/\1/')
 
 INITRAMFS="/usr/src/initramfs-current" #$KERNEL_VER"
