@@ -119,7 +119,8 @@ kernel() {
 	mkdir -p "$INITRAMFS"
 	make -j32
 	make -j32 modules
-	rm -r "/lib/modules/$KERNEL_VER" || echo "no modules?"
+	rm -r "/lib/modules/$KERNEL_VER.prev" || echo "no prev modules?"
+	mv "/lib/modules/$KERNEL_VER" "/lib/modules/$KERNEL_VER.prev" || echo "no modules?"
 	make modules_install
 	emerge -t1v @module-rebuild
 	rm -r "$INITRAMFS"
