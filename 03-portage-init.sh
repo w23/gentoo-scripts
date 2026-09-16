@@ -72,20 +72,51 @@ update_world() {
 essentials() {
 	emerge -tav \
 		vim tmux app-misc/mc gentoolkit wpa_supplicant pciutils usbutils mlocate dhcpcd eix logrotate sudo htop lsof \
-		openssh tmux neovim
+		openssh tmux neovim bash-completion btrfs-progs
 	eix-update
 }
 
 
-setup_kernel() {
+kernel_setup() {
 	emerge -tav grub gentoo-sources linux-firmware
 	eselect kernel set 1
+	pushd /usr/src/linux
+	make localmodconfig
+	# TODO absolute minimum kernel packages for:
+	# - LUKS
+	# - Filesystems
+	# - Network things
+	# - Perf
+	# - Docker/Podman deps
+	# - etc
+	make nconfig
+	popd
+}
+
+systemd_init() {
+	systemd-machine-id-setup
+	systemd-firstboot --prompt
+	systemctl preset-all #--enable-only
 }
 
 install_zfs() {
 	emerge -tav \
 		sys-fs/zfs '>=sys-fs/zfs-kmod-2.0.4' zfs-auto-snapshot \
 		--autounmask --autounmask-write  --backtrack=1000
+}
+
+setup_networkmanager() {
+	euse -E networkmanager -D ppp
+	time emerge -tav net-misc/networkmanager
+	systemctl enable NetworkManager
+}
+
+misc() {
+	systemctl enable systemd-timesyncd.service
+	time emerge -tav sys-block/io-scheduler-udev-rules
+	passwd
+	# TODO set up authorized_keys
+	# TODO env/no-ccache.conf
 }
 
 init() {
