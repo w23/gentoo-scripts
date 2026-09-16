@@ -13,9 +13,20 @@ echo INITRAMFS=$INITRAMFS
 # https://wiki.gentoo.org/wiki/Custom_Initramfs/Examples
 # https://wiki.gentoo.org/wiki/Custom_Initramfs
 
+mount_boot() {
+	mount -o rw,relatime,fmask=0022,dmask=0022,iocharset=ascii,shortname=mixed /boot || echo already mounted?
+}
+
+fixup_systemd_waiting() {
+	# A fix for "A start job is running for /dev/mapper/crypt-btroot"
+	# See https://github.com/systemd/systemd/issues/34683
+	echo 'SUBSYSTEM=="block", KERNEL=="dm-0", ENV{SYSTEMD_READY}="1"' > /etc/udev/rules.d/99-crypt-root.rules
+}
+
 grub_install() {
-	mount /boot || echo already mounted?
+	mount_boot
 	grub-install --compress=xz --no-nvram --target=x86_64-efi --efi-directory=/boot --removable
+	fixup_systemd_waiting
 }
 
 grub_update() {
