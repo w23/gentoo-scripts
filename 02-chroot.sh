@@ -16,6 +16,11 @@ prepare() {
 	chmod 1777 /dev/shm
 }
 
+unmount() {
+	umount -l /mnt/gentoo/dev{/shm,/pts,}
+	umount -R /mnt/gentoo
+}
+
 copy_scripts() {
 	cp -av . /mnt/gentoo/root/gentoo-scripts
 }
