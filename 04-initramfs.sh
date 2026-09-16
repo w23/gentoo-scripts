@@ -34,10 +34,12 @@ grub_update() {
 }
 
 install_prereq() {
+	# TODO single file for initramfs exclusively
 	echo 'app-misc/pax-utils python' >> /etc/portage/package.use/10-local
 	echo 'sys-apps/busybox mdev' >> /etc/portage/package.use/10-local
+	echo 'sys-kernel/installkernel -systemd grub' >> /etc/portage/package.use/10-local
 	#echo 'sys-fs/cryptsetup static' >> /etc/portage/package.use/10-local
-	emerge -tav busybox app-misc/pax-utils cryptsetup
+	emerge -tavn busybox app-misc/pax-utils cryptsetup btrfs-progs installkernel
 }
 
 create() {
