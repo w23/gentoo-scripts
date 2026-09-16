@@ -43,22 +43,25 @@ install_prereq() {
 }
 
 create() {
+	rm -r "$INITRAMFS" || echo "no old initramfs?"
 	mkdir -p $INITRAMFS/{bin,dev,etc,lib/modules,lib64,proc,root,sbin,sys,newroot,run/cryptsetup}
 	cp -a /dev/{null,console,tty} $INITRAMFS/dev/
 	cp -a /bin/busybox $INITRAMFS/bin/busybox
 	cp -a /dev/{urandom,random} $INITRAMFS/dev
 	cp -a /sbin/cryptsetup $INITRAMFS/sbin/cryptsetup
+	cp -a /sbin/btrfs $INITRAMFS/sbin/btrfs
 
 	lddtree --copy-to-tree $INITRAMFS /bin/busybox
 	ln -s ../bin/busybox $INITRAMFS/sbin/mdev
 	chroot $INITRAMFS /bin/busybox --install -s
 
 	lddtree --copy-to-tree $INITRAMFS /sbin/cryptsetup
-	lddtree --copy-to-tree $INITRAMFS /sbin/zpool
-	lddtree --copy-to-tree $INITRAMFS /sbin/zfs
-	lddtree --copy-to-tree $INITRAMFS /sbin/mount.zfs
+	lddtree --copy-to-tree $INITRAMFS /sbin/btrfs
+	#lddtree --copy-to-tree $INITRAMFS /sbin/zpool
+	#lddtree --copy-to-tree $INITRAMFS /sbin/zfs
+	#lddtree --copy-to-tree $INITRAMFS /sbin/mount.zfs
 	# doesn't really exist anymore lddtree --copy-to-tree $INITRAMFS /sbin/fsck.zfs
-	lddtree --copy-to-tree $INITRAMFS /sbin/zdb
+	#lddtree --copy-to-tree $INITRAMFS /sbin/zdb
 	# Why is this not copied over by cryptsetup?!
 	cp "/usr/lib/gcc/x86_64-pc-linux-gnu/$GCC_VER/libgcc_s.so.1" $INITRAMFS/lib64/
 
@@ -72,10 +75,10 @@ create() {
 
 	cp -av /usr/src/initramfs-skel/init $INITRAMFS/init
 
-	mkdir -p $INITRAMFS/etc/zfs
-	zpool set cachefile=/etc/zfs/zpool.cache zroot
-	cp -av /etc/zfs/zpool.cache $INITRAMFS/etc/zfs/
-	zpool set cachefile=none zroot
+	#mkdir -p $INITRAMFS/etc/zfs
+	#zpool set cachefile=/etc/zfs/zpool.cache zroot
+	#cp -av /etc/zfs/zpool.cache $INITRAMFS/etc/zfs/
+	#zpool set cachefile=none zroot
 
 	#pushd $INITRAMFS
 	#find . -print0 | cpio --null --create --verbose --format=newc | xz -9 > $INITRAMFS.cpio.xz
