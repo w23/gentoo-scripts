@@ -85,6 +85,27 @@ create() {
 	#popd
 }
 
+kernel_install() {
+	mount_boot
+	pushd /usr/src/linux
+	#cp -a "/boot/vmlinuz-$KERNEL_VER" "/boot/vmlinuz-$KERNEL_VER.old.$(date +%Y-%m-%d-%H-%M)" || echo "no old ver?"
+	# 2024-02-0x add disabling systemd install, as it leads to some weird kernel paths
+	# 2026-09-05 FIXME how to make it version kernel images? By default it installs `/boot/vmlinuz` w/o any suffix
+	SYSTEMD_KERNEL_INSTALL=0 make install
+	popd
+	grub_update
+	echo "DONE!"
+}
+
+install() {
+	#mount /boot || echo "already mounted?"
+	rm "/usr/src/linux/usr/initramfs_data.cpio" || echo "no old?"
+	pushd /usr/src/linux
+	make -j32
+	popd
+	kernel_install
+}
+
 kernel() {
 	pushd /usr/src/linux
 	rm -r "$INITRAMFS" || echo "no old initramfs?"
@@ -104,16 +125,12 @@ kernel() {
 	rm -r "$INITRAMFS"
 	#rm "$INITRAMFS.cpio.xz"
 	create
-	mount /boot || echo "already mounted?"
-	rm "/usr/src/linux/usr/initramfs_data.cpio"
-	make -j32
-	#cp -a "/boot/vmlinuz-$KERNEL_VER" "/boot/vmlinuz-$KERNEL_VER.old.$(date +%Y-%m-%d-%H-%M)" || echo "no old ver?"
-	# 2024-02-0x add disabling systemd install, as it leads to some weird kernel paths
-	SYSTEMD_KERNEL_INSTALL=0 make install
-	grub_update
-	echo "DONE!"
+	install
 }
 
-$@
+for cmd in "$@"
+do
+	time "${cmd}"
+done
 
 #create_initramfs
