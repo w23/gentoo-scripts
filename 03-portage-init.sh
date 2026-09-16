@@ -25,9 +25,10 @@ USE="-bindist -doc -sendmail mmx sse sse2"' \
 
 	ln -sf ../usr/share/zoneinfo/America/New_York /etc/localtime
 
-	echo "en_GB.UTF-8 UTF-8
+	echo "en_US.UTF-8 UTF-8
+en_GB.UTF-8 UTF-8
 ru_RU.UTF-8 UTF-8
-C.UTF8 UTF-8" > /etc/locale.gen
+C.UTF-8 UTF-8" > /etc/locale.gen
 	locale-gen
 
 #USE=\"-bindist -doc -fonts -themes -sendmail mmx sse sse2\"" >> /etc/portage/make.conf
